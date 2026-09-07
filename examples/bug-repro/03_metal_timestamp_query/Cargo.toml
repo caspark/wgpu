@@ -1,0 +1,12 @@
+[package]
+name = "wgpu-bug-repro-03-metal-timestamp-query"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+bytemuck = { workspace = true, features = ["derive"] }
+env_logger.workspace = true
+pollster.workspace = true
+wgpu.workspace = true
+winit.workspace = true

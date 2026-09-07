@@ -776,6 +776,8 @@ impl crate::Device for super::Device {
             state: super::CommandState::default(),
             temp: super::Temp::default(),
             counters: Arc::clone(&self.counters),
+            timestamp_resolve_event: None,
+            timestamp_resolve_value: 0,
         })
     }
 

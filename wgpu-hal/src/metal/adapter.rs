@@ -1104,6 +1104,12 @@ impl super::CapabilitiesQuery {
                     && device.supportsShaderBarycentricCoordinates()),
             // https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf#page=3
             // See https://github.com/gfx-rs/wgpu/pull/8725 for more details
+            // Newer Apple GPUs can race timestamp write-back against `resolveCounters`, so the
+            // last timestamp sampled before a resolve comes back zero or stale. Dawn works around
+            // this the same way, gated the same way, under the toggle
+            // `MetalSerializeTimestampGenerationAndResolution`.
+            serialize_timestamp_generation_and_resolution: family_check
+                && device.supportsFamily(MTLGPUFamily::Apple8),
             supports_memoryless_storage: metal4
                 || if family_check {
                     // Apple A7 (MTLGPUFamily::Apple1) has been tested to have support.
@@ -1561,6 +1567,8 @@ impl super::CapabilitiesQuery {
             headless: self.headless,
             has_unified_memory: self.has_unified_memory,
             timestamp_query_support: self.timestamp_query_support,
+            serialize_timestamp_generation_and_resolution: self
+                .serialize_timestamp_generation_and_resolution,
             supports_memoryless_storage: self.supports_memoryless_storage,
             mesh_shaders: self.mesh_shaders,
         }

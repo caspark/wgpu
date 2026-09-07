@@ -329,6 +329,7 @@ struct CapabilitiesQuery {
     supported_vertex_amplification_factor: u32,
     shader_barycentrics: bool,
     supports_memoryless_storage: bool,
+    serialize_timestamp_generation_and_resolution: bool,
     supports_raytracing: bool,
     shader_per_vertex: bool,
     supports_multisample_array: bool,
@@ -341,6 +342,10 @@ struct PrivateCapabilities {
     headless: bool,
     has_unified_memory: Option<bool>,
     timestamp_query_support: TimestampQuerySupport,
+    /// Newer Apple GPUs race timestamp write-back against `resolveCounters`, so the last
+    /// timestamp sampled before a resolve can come back zero or stale. Serialize the two with
+    /// an `MTLSharedEvent` signal/wait. See [`QueueShared::next_timestamp_resolve_fence`].
+    serialize_timestamp_generation_and_resolution: bool,
     supports_memoryless_storage: bool,
     mesh_shaders: bool,
 }
@@ -1357,6 +1362,16 @@ pub struct CommandEncoder {
     state: CommandState,
     temp: Temp,
     counters: Arc<wgt::HalCounters>,
+    /// Lazily created event used to serialize timestamp write-back against query resolution.
+    /// See [`PrivateCapabilities::serialize_timestamp_generation_and_resolution`].
+    ///
+    /// Deliberately per-encoder rather than per-queue: the signal and the wait are encoded with
+    /// the same value into the same command buffer, and a wait is satisfied by *any* signal that
+    /// raises the event to at least that value. Sharing one event across encoders would let a
+    /// concurrently executing command buffer's higher-valued signal satisfy this command buffer's
+    /// wait, silently defeating the serialization. Only this encoder ever touches this event.
+    timestamp_resolve_event: Option<Retained<ProtocolObject<dyn MTLSharedEvent>>>,
+    timestamp_resolve_value: u64,
 }
 
 impl fmt::Debug for CommandEncoder {

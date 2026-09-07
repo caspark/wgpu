@@ -4680,6 +4680,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "wgpu-bug-repro-03-metal-timestamp-query"
+version = "0.0.0"
+dependencies = [
+ "bytemuck",
+ "env_logger",
+ "pollster",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
 name = "wgpu-core"
 version = "30.0.1"
 dependencies = [

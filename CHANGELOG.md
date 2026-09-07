@@ -42,6 +42,12 @@ Bottom level categories:
 
 ## Unreleased
 
+### Bug Fixes
+
+#### Metal
+
+- Fix the last timestamp query written before a `resolve_query_set` coming back as zero or as a stale value from an earlier submission on Apple8-and-newer GPUs, which made the final pass in a frame report a garbage duration. Counter write-back could still be in flight when `resolveCounters` ran; wgpu now serializes the two with an `MTLSharedEvent` signal/wait, matching Dawn's `MetalSerializeTimestampGenerationAndResolution` workaround. By @TODO in [#TODO](https://github.com/gfx-rs/wgpu/pull/TODO).
+
 ## v30.0.1 (2026-08-21)
 
 ### Bug Fixes

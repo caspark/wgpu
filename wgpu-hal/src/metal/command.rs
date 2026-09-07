@@ -7,10 +7,10 @@ use objc2_metal::{
     MTLAccelerationStructure, MTLAccelerationStructureCommandEncoder, MTLBlitCommandEncoder,
     MTLBlitPassDescriptor, MTLBuffer, MTLCommandBuffer, MTLCommandBufferStatus, MTLCommandEncoder,
     MTLCommandQueue, MTLComputeCommandEncoder, MTLComputePassDescriptor, MTLCounterDontSample,
-    MTLDevice, MTLLoadAction, MTLPrimitiveType, MTLRenderCommandEncoder, MTLRenderPassDescriptor,
-    MTLResidencySet, MTLResidencySetDescriptor, MTLSamplerState, MTLScissorRect, MTLSize,
-    MTLStoreAction, MTLTexture, MTLVertexAmplificationViewMapping, MTLViewport,
-    MTLVisibilityResultMode,
+    MTLDevice, MTLEvent, MTLLoadAction, MTLPrimitiveType, MTLRenderCommandEncoder,
+    MTLRenderPassDescriptor, MTLResidencySet, MTLResidencySetDescriptor, MTLSamplerState,
+    MTLScissorRect, MTLSize, MTLStoreAction, MTLTexture, MTLVertexAmplificationViewMapping,
+    MTLViewport, MTLVisibilityResultMode,
 };
 
 use super::{
@@ -860,6 +860,41 @@ impl crate::CommandEncoder for super::CommandEncoder {
         offset: wgt::BufferAddress,
         _: wgt::BufferSize, // Metal doesn't support queries that are bigger than a single element are not supported
     ) {
+        if matches!(set.ty, wgt::QueryType::Timestamp)
+            && self
+                .shared
+                .private_caps
+                .serialize_timestamp_generation_and_resolution
+        {
+            // On newer Apple GPUs the counter write-back for the timestamps sampled earlier in
+            // this command buffer can still be in flight when `resolveCounters` runs, so the
+            // last timestamp before the resolve comes back as zero or as a stale value from a
+            // previous frame. Ordinary intra-queue ordering does not cover it - even moving the
+            // resolve into a separately submitted command buffer still races. Signalling and
+            // then immediately waiting on a shared event forces the GPU to drain the pending
+            // work, including the counter write-back, before the resolve proceeds.
+            //
+            // Event encoding is a command-buffer operation, so any open encoder has to be closed
+            // first. `enter_blit` below reopens one.
+            self.leave_blit();
+            self.leave_acceleration_structure_builder();
+            debug_assert!(self.state.render.is_none() && self.state.compute.is_none());
+
+            if self.timestamp_resolve_event.is_none() {
+                // `newSharedEvent` can return `None` in restricted sandboxes. If it does we just
+                // resolve without serializing, which is no worse than not having the workaround.
+                self.timestamp_resolve_event = self.shared.device.newSharedEvent();
+            }
+            if let Some(event) = self.timestamp_resolve_event.as_ref() {
+                self.timestamp_resolve_value += 1;
+                let value = self.timestamp_resolve_value;
+                let event: &ProtocolObject<dyn MTLEvent> = ProtocolObject::from_ref(&**event);
+                let cmd_buf = self.raw_cmd_buf.as_ref().unwrap();
+                cmd_buf.encodeSignalEvent_value(event, value);
+                cmd_buf.encodeWaitForEvent_value(event, value);
+            }
+        }
+
         let encoder = self.enter_blit();
         match set.ty {
             wgt::QueryType::Occlusion => {
