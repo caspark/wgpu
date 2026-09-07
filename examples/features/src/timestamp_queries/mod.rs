@@ -394,6 +394,7 @@ fn render_pass(
             query_set,
             beginning_of_pass_write_index: Some(*next_unused_query),
             end_of_pass_write_index: Some(*next_unused_query + 1),
+            stage_writes: None,
         }),
         occlusion_query_set: None,
         multiview_mask: None,

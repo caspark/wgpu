@@ -1064,6 +1064,17 @@ impl crate::CommandEncoder for super::CommandEncoder {
                             .map_or(MTLCounterDontSample, |i| i as _),
                     )
                 };
+                if let Some(stage_writes) = timestamp_writes.stage_writes {
+                    unsafe {
+                        sba_descriptor
+                            .setEndOfVertexSampleIndex(stage_writes.end_of_vertex_write_index as _)
+                    };
+                    unsafe {
+                        sba_descriptor.setStartOfFragmentSampleIndex(
+                            stage_writes.beginning_of_fragment_write_index as _,
+                        )
+                    };
+                }
                 unsafe {
                     sba_descriptor.setEndOfFragmentSampleIndex(
                         timestamp_writes

@@ -786,6 +786,7 @@ impl<'a> PassTimestampWrites<'a, dyn DynQuerySet> {
             query_set: self.query_set.expect_downcast_ref(),
             beginning_of_pass_write_index: self.beginning_of_pass_write_index,
             end_of_pass_write_index: self.end_of_pass_write_index,
+            stage_writes: self.stage_writes,
         }
     }
 }

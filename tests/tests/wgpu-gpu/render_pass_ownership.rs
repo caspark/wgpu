@@ -251,6 +251,7 @@ async fn render_pass_query_set_ownership_timestamps(ctx: TestingContext) {
                 query_set: &query_set_timestamp_writes,
                 beginning_of_pass_write_index: Some(0),
                 end_of_pass_write_index: Some(1),
+                stage_writes: None,
             }),
             ..Default::default()
         });

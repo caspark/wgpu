@@ -485,6 +485,7 @@ impl CommandEncoder {
                         Self::validate_pass_timestamp_writes::<ComputePassErrorInner>(
                             &self.device,
                             tw,
+                            false,
                         )
                     })
                     .transpose()
@@ -576,6 +577,7 @@ impl Global {
                     query_set: hub.query_sets.get(tw.query_set),
                     beginning_of_pass_write_index: tw.beginning_of_pass_write_index,
                     end_of_pass_write_index: tw.end_of_pass_write_index,
+                    stage_writes: None,
                 }),
         };
 
@@ -771,6 +773,7 @@ pub(super) fn encode_compute_pass(
                 query_set: raw_query_set,
                 beginning_of_pass_write_index: tw.beginning_of_pass_write_index,
                 end_of_pass_write_index: tw.end_of_pass_write_index,
+                stage_writes: None,
             })
         } else {
             None

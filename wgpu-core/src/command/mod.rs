@@ -84,7 +84,7 @@ pub(crate) use allocator::CommandAllocator;
 pub use self::{compute_command::ComputeCommand, render_command::RenderCommand};
 
 pub(crate) use timestamp_writes::ArcPassTimestampWrites;
-pub use timestamp_writes::PassTimestampWrites;
+pub use timestamp_writes::{PassTimestampWrites, RenderPassStageTimestampWrites};
 
 use crate::binding_model::BindingError;
 use crate::device::queue::TempResource;
@@ -967,6 +967,7 @@ impl CommandEncoder {
     pub(crate) fn validate_pass_timestamp_writes<E>(
         device: &Device,
         timestamp_writes: &PassTimestampWrites<Fallible<QuerySet>>,
+        render_pass: bool,
     ) -> Result<ArcPassTimestampWrites, E>
     where
         E: From<TimestampWritesError>
@@ -979,27 +980,49 @@ impl CommandEncoder {
             ref query_set,
             beginning_of_pass_write_index,
             end_of_pass_write_index,
+            stage_writes,
         } = timestamp_writes;
 
         device.require_features(wgt::Features::TIMESTAMP_QUERY)?;
+        if stage_writes.is_some() {
+            if !render_pass {
+                return Err(TimestampWritesError::StageWritesInComputePass.into());
+            }
+            device.require_features(wgt::Features::RENDER_PASS_STAGE_TIMESTAMPS)?;
+        }
 
         let query_set = query_set.clone().get()?;
 
         query_set.same_device(device)?;
 
-        for idx in [beginning_of_pass_write_index, end_of_pass_write_index]
-            .into_iter()
-            .flatten()
-        {
+        let stage_indices = stage_writes.map(|writes| {
+            [
+                writes.end_of_vertex_write_index,
+                writes.beginning_of_fragment_write_index,
+            ]
+        });
+        let indices = [
+            beginning_of_pass_write_index,
+            stage_indices.map(|indices| indices[0]),
+            stage_indices.map(|indices| indices[1]),
+            end_of_pass_write_index,
+        ];
+        for idx in indices.into_iter().flatten() {
             query_set.validate_query(SimplifiedQueryType::Timestamp, idx, None)?;
         }
-
-        if let Some((begin, end)) = beginning_of_pass_write_index.zip(end_of_pass_write_index) {
-            if begin == end {
-                return Err(TimestampWritesError::IndicesEqual { idx: begin }.into());
+        for (position, index) in indices.iter().enumerate() {
+            if let Some(index) = index {
+                if indices[..position].contains(&Some(*index)) {
+                    return Err(TimestampWritesError::IndicesEqual { idx: *index }.into());
+                }
             }
         }
 
+        if stage_writes.is_some()
+            && (beginning_of_pass_write_index.is_none() || end_of_pass_write_index.is_none())
+        {
+            return Err(TimestampWritesError::IncompleteStageWrites.into());
+        }
         if beginning_of_pass_write_index
             .or(end_of_pass_write_index)
             .is_none()
@@ -1011,6 +1034,7 @@ impl CommandEncoder {
             query_set,
             beginning_of_pass_write_index,
             end_of_pass_write_index,
+            stage_writes,
         })
     }
 
@@ -1748,18 +1772,23 @@ impl WebGpuError for DebugGroupError {
 #[derive(Clone, Debug, Error)]
 #[non_exhaustive]
 pub enum TimestampWritesError {
-    #[error(
-        "begin and end indices of pass timestamp writes are both set to {idx}, which is not allowed"
-    )]
+    #[error("pass timestamp write index {idx} is used more than once, which is not allowed")]
     IndicesEqual { idx: u32 },
     #[error("no begin or end indices were specified for pass timestamp writes, expected at least one to be set")]
     IndicesMissing,
+    #[error("render pass stage timestamp writes require both beginning and end indices")]
+    IncompleteStageWrites,
+    #[error("render pass stage timestamp writes cannot be used in a compute pass")]
+    StageWritesInComputePass,
 }
 
 impl WebGpuError for TimestampWritesError {
     fn webgpu_error_type(&self) -> ErrorType {
         match self {
-            Self::IndicesEqual { .. } | Self::IndicesMissing => ErrorType::Validation,
+            Self::IndicesEqual { .. }
+            | Self::IndicesMissing
+            | Self::IncompleteStageWrites
+            | Self::StageWritesInComputePass => ErrorType::Validation,
         }
     }
 }

@@ -320,6 +320,7 @@ impl IntoTrace for ArcPassTimestampWrites {
             query_set: self.query_set.into_trace(),
             beginning_of_pass_write_index: self.beginning_of_pass_write_index,
             end_of_pass_write_index: self.end_of_pass_write_index,
+            stage_writes: self.stage_writes,
         }
     }
 }

@@ -2573,6 +2573,7 @@ impl dispatch::CommandEncoderInterface for CoreCommandEncoder {
                     query_set: tw.query_set.inner.as_core().id,
                     beginning_of_pass_write_index: tw.beginning_of_pass_write_index,
                     end_of_pass_write_index: tw.end_of_pass_write_index,
+                    stage_writes: None,
                 });
 
         let (pass, err) = self.context.0.command_encoder_begin_compute_pass(
@@ -2635,6 +2636,13 @@ impl dispatch::CommandEncoderInterface for CoreCommandEncoder {
                     query_set: tw.query_set.inner.as_core().id,
                     beginning_of_pass_write_index: tw.beginning_of_pass_write_index,
                     end_of_pass_write_index: tw.end_of_pass_write_index,
+                    stage_writes: tw.stage_writes.map(|writes| {
+                        wgc::command::RenderPassStageTimestampWrites {
+                            end_of_vertex_write_index: writes.end_of_vertex_write_index,
+                            beginning_of_fragment_write_index: writes
+                                .beginning_of_fragment_write_index,
+                        }
+                    }),
                 });
 
         let (pass, err) = self.context.0.command_encoder_begin_render_pass(

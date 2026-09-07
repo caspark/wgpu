@@ -438,6 +438,7 @@ impl State {
                     query_set: &self.query_set,
                     beginning_of_pass_write_index: Some(i as u32 * 2),
                     end_of_pass_write_index: Some(i as u32 * 2 + 1),
+                    stage_writes: None,
                 }),
                 occlusion_query_set: None,
                 multiview_mask: None,

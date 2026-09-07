@@ -1674,6 +1674,12 @@ impl RenderPassInfo {
             if let Some(index) = tw.beginning_of_pass_write_index {
                 pending_query_resets.use_query_set(query_set, index);
             }
+            if let Some(stage_writes) = tw.stage_writes {
+                pending_query_resets
+                    .use_query_set(query_set, stage_writes.end_of_vertex_write_index);
+                pending_query_resets
+                    .use_query_set(query_set, stage_writes.beginning_of_fragment_write_index);
+            }
             if let Some(index) = tw.end_of_pass_write_index {
                 pending_query_resets.use_query_set(query_set, index);
             }
@@ -1684,6 +1690,12 @@ impl RenderPassInfo {
                 query_set: query_set.try_raw(snatch_guard)?,
                 beginning_of_pass_write_index: tw.beginning_of_pass_write_index,
                 end_of_pass_write_index: tw.end_of_pass_write_index,
+                stage_writes: tw
+                    .stage_writes
+                    .map(|writes| hal::RenderPassStageTimestampWrites {
+                        end_of_vertex_write_index: writes.end_of_vertex_write_index,
+                        beginning_of_fragment_write_index: writes.beginning_of_fragment_write_index,
+                    }),
             })
         } else {
             None
@@ -2051,7 +2063,7 @@ impl CommandEncoder {
                 .timestamp_writes
                 .map(|tw| {
                     CommandEncoder::validate_pass_timestamp_writes::<RenderPassErrorInner>(
-                        device, &tw,
+                        device, &tw, true,
                     )
                 })
                 .transpose()?;
@@ -2197,6 +2209,7 @@ impl Global {
                     query_set: query_sets.get(tw.query_set),
                     beginning_of_pass_write_index: tw.beginning_of_pass_write_index,
                     end_of_pass_write_index: tw.end_of_pass_write_index,
+                    stage_writes: tw.stage_writes,
                 }),
             occlusion_query_set: desc
                 .occlusion_query_set

@@ -1222,6 +1222,7 @@ impl Player {
             query_set: self.resolve_query_set_id(writes.query_set),
             beginning_of_pass_write_index: writes.beginning_of_pass_write_index,
             end_of_pass_write_index: writes.end_of_pass_write_index,
+            stage_writes: writes.stage_writes,
         }
     }
 

@@ -591,11 +591,25 @@ impl RenderPass<'_> {
     }
 }
 
+/// Describes the additional pipeline-stage timestamp writes of a render pass.
+///
+/// For use with [`RenderPassTimestampWrites`]. Requires
+/// [`Features::RENDER_PASS_STAGE_TIMESTAMPS`].
+#[derive(Clone, Copy, Debug)]
+pub struct RenderPassStageTimestampWrites {
+    /// The query index written when vertex processing for the pass ends.
+    pub end_of_vertex_write_index: u32,
+    /// The query index written when fragment processing for the pass begins.
+    pub beginning_of_fragment_write_index: u32,
+}
+#[cfg(send_sync)]
+static_assertions::assert_impl_all!(RenderPassStageTimestampWrites: Send, Sync);
+
 /// Describes the timestamp writes of a render pass.
 ///
 /// For use with [`RenderPassDescriptor`].
 /// At least one of [`Self::beginning_of_pass_write_index`] and [`Self::end_of_pass_write_index`]
-/// must be `Some`.
+/// must be `Some`. If [`Self::stage_writes`] is `Some`, both must be `Some`.
 ///
 /// Corresponds to [WebGPU `GPURenderPassTimestampWrite`](
 /// https://gpuweb.github.io/gpuweb/#dictdef-gpurenderpasstimestampwrites).
@@ -607,6 +621,12 @@ pub struct RenderPassTimestampWrites<'a> {
     pub beginning_of_pass_write_index: Option<u32>,
     /// The index of the query set at which an end timestamp of this pass is written, if any.
     pub end_of_pass_write_index: Option<u32>,
+    /// Additional render-pipeline stage boundaries to write, if supported.
+    ///
+    /// Requires [`Features::RENDER_PASS_STAGE_TIMESTAMPS`]. When specified, the beginning of pass
+    /// is the beginning of vertex processing and the end of pass is the end of fragment
+    /// processing.
+    pub stage_writes: Option<RenderPassStageTimestampWrites>,
 }
 #[cfg(send_sync)]
 static_assertions::assert_impl_all!(RenderPassTimestampWrites<'_>: Send, Sync);

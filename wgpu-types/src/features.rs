@@ -745,6 +745,19 @@ bitflags_array! {
         #[doc = link_to_wgpu_docs!(["`ComputePass::write_timestamp`"]: "struct.ComputePass.html#method.write_timestamp")]
         #[name("wgpu-timestamp-query-inside-passes", "timestamp-query-inside-passes")]
         const TIMESTAMP_QUERY_INSIDE_PASSES = 1 << 6;
+        /// Allows render-pass timestamps at the end of vertex processing and the beginning of
+        /// fragment processing, in addition to the standard beginning and end timestamps.
+        ///
+        /// This exposes all four render-pass stage boundaries provided by Metal. The four query
+        /// indices must be distinct. This feature must be requested with
+        /// [`Features::TIMESTAMP_QUERY`].
+        ///
+        /// Supported platforms:
+        /// - Metal
+        ///
+        /// This is a native only feature.
+        #[name("wgpu-render-pass-stage-timestamps")]
+        const RENDER_PASS_STAGE_TIMESTAMPS = 1 << 14;
         /// Webgpu only allows the MAP_READ and MAP_WRITE buffer usage to be matched with
         /// COPY_DST and COPY_SRC respectively. This removes this requirement.
         ///

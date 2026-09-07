@@ -47,6 +47,14 @@ pub(super) fn record_pass_timestamp_writes(
     for index in tw
         .beginning_of_pass_write_index
         .into_iter()
+        .chain(
+            tw.stage_writes
+                .map(|writes| writes.end_of_vertex_write_index),
+        )
+        .chain(
+            tw.stage_writes
+                .map(|writes| writes.beginning_of_fragment_write_index),
+        )
         .chain(tw.end_of_pass_write_index)
     {
         record_query_write(query_set_writes, &tw.query_set, index);

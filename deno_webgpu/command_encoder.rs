@@ -125,6 +125,7 @@ impl GPUCommandEncoder {
           beginning_of_pass_write_index: timestamp_writes
             .beginning_of_pass_write_index,
           end_of_pass_write_index: timestamp_writes.end_of_pass_write_index,
+          stage_writes: None,
         }
       });
 
@@ -165,6 +166,7 @@ impl GPUCommandEncoder {
           beginning_of_pass_write_index: timestamp_writes
             .beginning_of_pass_write_index,
           end_of_pass_write_index: timestamp_writes.end_of_pass_write_index,
+          stage_writes: None,
         }
       });
 

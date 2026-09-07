@@ -2861,11 +2861,18 @@ pub struct DepthStencilAttachment<'a, T: DynTextureView + ?Sized> {
     pub clear_value: (f32, u32),
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct RenderPassStageTimestampWrites {
+    pub end_of_vertex_write_index: u32,
+    pub beginning_of_fragment_write_index: u32,
+}
+
 #[derive(Clone, Debug)]
 pub struct PassTimestampWrites<'a, Q: DynQuerySet + ?Sized> {
     pub query_set: &'a Q,
     pub beginning_of_pass_write_index: Option<u32>,
     pub end_of_pass_write_index: Option<u32>,
+    pub stage_writes: Option<RenderPassStageTimestampWrites>,
 }
 
 #[derive(Clone, Debug)]

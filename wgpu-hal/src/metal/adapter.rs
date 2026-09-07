@@ -1212,6 +1212,11 @@ impl super::CapabilitiesQuery {
                 .contains(TimestampQuerySupport::STAGE_BOUNDARIES),
         );
         features.set(
+            F::RENDER_PASS_STAGE_TIMESTAMPS,
+            self.timestamp_query_support
+                .contains(TimestampQuerySupport::STAGE_BOUNDARIES),
+        );
+        features.set(
             F::TIMESTAMP_QUERY_INSIDE_ENCODERS,
             self.timestamp_query_support
                 .contains(TimestampQuerySupport::ON_BLIT_ENCODER),
